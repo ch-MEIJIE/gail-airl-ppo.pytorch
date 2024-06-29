@@ -23,11 +23,11 @@ class Trainer:
         
         self.env_id = env_id
         self.env = env
-        self.env.seed(seed)
+        # self.env.seed(seed)
 
         # Env for evaluation.
         self.eval_env = eval_env
-        self.eval_env.seed(2**31-seed)
+        # self.eval_env.seed(2**31-seed)
 
         self.algo = algo
         self.log_dir = log_dir
@@ -55,16 +55,25 @@ class Trainer:
         # max_e_steps = self.env._max_episode_steps        
         while total_steps < self.num_steps:
             n_episode += 1
-            s, done, steps, ep_r = self.env.reset(), False, 0, 0
+            # s, done, steps, ep_r = self.env.reset(), False, 0, 0
+            s, info = self.env.reset()
+            done = False
+            steps = 0
+            ep_r = 0
             '''Interact & train'''
             while not done:
                 total_steps += 1
+                if total_steps % 100 == 0:
+                    print(f"Total steps: {total_steps}")
                 traj_lenth += 1
                 steps += 1
-                
-                s_prime, a, pi_a, r, done, s_val, self.env = self.algo.step(self.env, s, self.render)
-
+                start_time = time()
+                s_prime, a, pi_a, r, done, s_val, self.env, info = self.algo.step(self.env, s, self.render)
+                print("Current info: {}".format(info))
+                end_time = time()
                 self.algo.buffer.put((s, a, r, s_prime, pi_a, s_val, done))
+                
+                print("Step time: {}".format(end_time - start_time))
                 s = s_prime
                 ep_r += r
 

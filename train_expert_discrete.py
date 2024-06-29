@@ -4,7 +4,9 @@ from datetime import datetime
 from pathlib import Path
 from time import time
 
-import gym
+import gymnasium as gym
+import PyFlyt.gym_envs  # noqa
+from gymnasium.wrappers import FlattenObservation
 import torch
 import yaml
 
@@ -13,8 +15,18 @@ from gail_airl_ppo.trainer_discrete import Trainer
 
 
 def run(args):
-    env = gym.make(args.env_id)
-    eval_env = gym.make(args.env_id)
+    env = gym.make(
+        "PyFlyt/QuadX-UVRZ-Gates-v2",
+        render_mode="human",
+        num_targets=1,
+        agent_hz=2,)
+    env = FlattenObservation(env)
+    eval_env = gym.make(
+        "PyFlyt/QuadX-UVRZ-Gates-v2",
+        render_mode=None,
+        num_targets=1,
+        agent_hz=2,)
+    eval_env = FlattenObservation(eval_env)
     state_dim = env.observation_space.shape[0]
     action_dim = action_dim = env.action_space.n
     device = torch.device("cuda" if (torch.cuda.is_available() and args.cuda) else "cpu")
