@@ -11,7 +11,8 @@ from torch.distributions import Categorical
 from tqdm import tqdm
 
 from gail_airl_ppo.algo.base import Algorithm
-from gail_airl_ppo.algo.discrete.network.actor_critic import Actor, Critic
+# from gail_airl_ppo.algo.discrete.network.actor_critic import Actor, Critic
+from gail_airl_ppo.algo.discrete.network.actor_critic_pyflyt import Actor, Critic
 from gail_airl_ppo.algo.discrete.rollout_buffer import RolloutBuffer
 from gail_airl_ppo.algo.discrete.utils import disable_gradient
 

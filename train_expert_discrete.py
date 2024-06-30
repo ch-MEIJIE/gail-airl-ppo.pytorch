@@ -1,38 +1,31 @@
 import argparse
 import os
 from datetime import datetime
-from pathlib import Path
-from time import time
 
 import gymnasium as gym
 import PyFlyt.gym_envs  # noqa
-from gymnasium.wrappers import FlattenObservation
 import torch
-import yaml
+from env_wrapper import PyFlytEnvWrapper
 
 from gail_airl_ppo.algo.discrete import PPO
 from gail_airl_ppo.trainer_discrete import Trainer
 
 
 def run(args):
-    env = gym.make(
-        "PyFlyt/QuadX-UVRZ-Gates-v2",
-        render_mode="human",
-        num_targets=1,
-        agent_hz=2,)
-    env = FlattenObservation(env)
-    eval_env = gym.make(
-        "PyFlyt/QuadX-UVRZ-Gates-v2",
+    env = PyFlytEnvWrapper(
         render_mode=None,
-        num_targets=1,
-        agent_hz=2,)
-    eval_env = FlattenObservation(eval_env)
-    state_dim = env.observation_space.shape[0]
-    action_dim = action_dim = env.action_space.n
+        env_id="PyFlyt/QuadX-UVRZ-Gates-v2"
+    )
+    eval_env = PyFlytEnvWrapper(
+        render_mode=None,
+        env_id="PyFlyt/QuadX-UVRZ-Gates-v2"
+    )
+    action_dim = env.act_size
+    state_dims = [env.obs_atti_size, (env.targets_num, env.obs_target_size), env.obs_bound_size]
     device = torch.device("cuda" if (torch.cuda.is_available() and args.cuda) else "cpu")
     torch.cuda.empty_cache()
     kwargs = {
-        "state_dim": state_dim,
+        "state_dim": state_dims,
         "action_dim": action_dim,
         "rollout_length": args.rollout_length,
         "save_interval": args.save_interval,
