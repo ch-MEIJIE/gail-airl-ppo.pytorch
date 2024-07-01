@@ -2,6 +2,7 @@ import os
 from time import time, sleep
 from datetime import timedelta
 from torch.utils.tensorboard import SummaryWriter
+import tqdm
 
 
 class Trainer:
@@ -12,11 +13,11 @@ class Trainer:
 
         # Env to collect samples.
         self.env = env
-        self.env.seed(seed)
+        # self.env.seed(seed)
 
         # Env for evaluation.
         self.env_test = env_test
-        self.env_test.seed(2**31-seed)
+        # self.env_test.seed(2**31-seed)
 
         self.algo = algo
         self.log_dir = log_dir
@@ -40,8 +41,9 @@ class Trainer:
         t = 0
         # Initialize the environment.
         state = self.env.reset()
+        pbar = tqdm.trange(1, self.num_steps + 1, unit_scale=1, desc='Training')
 
-        for step in range(1, self.num_steps + 1):
+        for step in pbar:
             # Pass to the algorithm to update state and episode timestep.
             state, t = self.algo.step(self.env, state, t, step)
 
