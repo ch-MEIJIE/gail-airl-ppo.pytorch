@@ -6,7 +6,7 @@ import numpy as np
 class PyFlytEnvWrapper:
     def __init__(
         self,
-        render_mode: str | None = "human",
+        render_mode: str = "human",
         env_id: str = "PyFlyt/QuadX-UVRZ-Gates-v2"
     ) -> None:
         self.env = gym.make(

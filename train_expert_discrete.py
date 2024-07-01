@@ -27,6 +27,7 @@ def run(args):
     kwargs = {
         "state_dim": state_dims,
         "action_dim": action_dim,
+        "context_length": 1,
         "rollout_length": args.rollout_length,
         "save_interval": args.save_interval,
         "eval_interval": args.eval_interval,
@@ -94,6 +95,6 @@ if __name__ == '__main__':
     # p.add_argument('--seed', type=int, default=int(time()))
     p.add_argument('--seed', type=int, default=0)
     p.add_argument('--render', type=bool, default=False)
-    p.add_argument('--write', type=bool, default=False)
+    p.add_argument('--write', type=bool, default=True)
     args = p.parse_args()
     run(args)

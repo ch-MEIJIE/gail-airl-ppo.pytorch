@@ -40,17 +40,19 @@ class Backbone(nn.Module):
 
         self.positional_encoding = nn.Parameter(
             torch.randn((context_length, int(hidden_unit_size/2))), requires_grad=True)
+        
+        self.context_length = context_length
 
     def forward(self, state):
         # Operations on attitude
-        obs_attitude = state[:self.attitude_dim]
+        obs_attitude = state[..., :self.attitude_dim]
 
         # Operations on target delta
         atti_output = self.attitude_net(obs_attitude)
-        obs_target_delta = state[self.attitude_dim:
+        obs_target_delta = state[..., self.attitude_dim:
                                  self.attitude_dim+self.target_delta_dim]
         # reshape target delta
-        obs_target_delta = obs_target_delta.reshape(
+        obs_target_delta = obs_target_delta.reshape(*obs_target_delta.shape[:-1],
             self.target_num, self.delta_dim)
         obs_target_delta = obs_target_delta[..., :self.context_length, :]
         if len(obs_target_delta.shape) != len(self.positional_encoding.shape):
@@ -75,58 +77,59 @@ class Backbone(nn.Module):
         target_output = target_output.mean(dim=-2)
 
         # Operations on target bounds
-        obs_bounds = state[self.attitude_dim+self.target_delta_dim:]
+        obs_bounds = state[..., self.attitude_dim+self.target_delta_dim:]
 
         bound_output = self.bounds_net(obs_bounds)
 
         return atti_output, target_output, bound_output
 
-    class Actor(nn.Module):
 
-        def __init__(self, state_dim, action_dim, hidden_unit_size, context_length):
-            super().__init__()
-            self.action_dim = action_dim
-            hidden_unit_size = hidden_unit_size
-            self.backbone = Backbone(
-                state_dim, hidden_unit_size, context_length)
+class Actor(nn.Module):
 
-            self.merge_net = nn.Sequential(
-                nn.Linear(hidden_unit_size*3, hidden_unit_size),
-                nn.ReLU(),
-                nn.Linear(hidden_unit_size, hidden_unit_size),
-                nn.ReLU(),
-                nn.Linear(hidden_unit_size, action_dim),
-                nn.Softmax(dim=-1)
-            )
+    def __init__(self, state_dim, action_dim, hidden_unit_size, context_length):
+        super().__init__()
+        self.action_dim = action_dim
+        hidden_unit_size = hidden_unit_size
+        self.backbone = Backbone(
+            state_dim, hidden_unit_size, context_length)
 
-        def forward(self, state):
-            atti_output, target_output, bound_output = self.backbone(state)
-            merge_input = torch.cat(
-                (atti_output, target_output, bound_output), dim=-1)
-            action_probs = self.merge_net(merge_input)
-            return action_probs
+        self.merge_net = nn.Sequential(
+            nn.Linear(hidden_unit_size*3, hidden_unit_size),
+            nn.ReLU(),
+            nn.Linear(hidden_unit_size, hidden_unit_size),
+            nn.ReLU(),
+            nn.Linear(hidden_unit_size, action_dim),
+            nn.Softmax(dim=-1)
+        )
 
-        def act(self, state):
-            action_probs = self.forward(state)
-            dist = Categorical(action_probs)
-            action = dist.sample()
-            action_logprob = dist.log_prob(action)
+    def forward(self, state):
+        atti_output, target_output, bound_output = self.backbone(state)
+        merge_input = torch.cat(
+            (atti_output, target_output, bound_output), dim=-1)
+        action_probs = self.merge_net(merge_input)
+        return action_probs
 
-            return action.detach(), action_logprob.detach()
+    def act(self, state):
+        action_probs = self.forward(state)
+        dist = Categorical(action_probs)
+        action = dist.sample()
+        action_logprob = dist.log_prob(action)
 
-        def exploit(self, state):
-            action_probs = self.forward(state)
-            action = torch.argmax(action_probs)
+        return action.detach(), action_logprob.detach()
 
-            return action.detach()
+    def exploit(self, state):
+        action_probs = self.forward(state)
+        action = torch.argmax(action_probs)
 
-        def evaluate(self, state, action):
-            action_probs = self.forward(state)
-            dist = Categorical(action_probs)
-            action_logprobs = dist.log_prob(action)
-            dist_entropy = dist.entropy()
+        return action.detach()
 
-            return action_logprobs, dist_entropy
+    def evaluate(self, state, action):
+        action_probs = self.forward(state)
+        dist = Categorical(action_probs)
+        action_logprobs = dist.log_prob(action)
+        dist_entropy = dist.entropy()
+
+        return action_logprobs, dist_entropy
 
 
 class Critic(nn.Module):

@@ -64,17 +64,14 @@ class Trainer:
             '''Interact & train'''
             while not done:
                 total_steps += 1
-                if total_steps % 100 == 0:
-                    print(f"Total steps: {total_steps}")
+                if total_steps % 1000 == 0:
+                    current_time = time() - self.start_time
+                    print(f"Total steps: {total_steps}, Current time: {current_time}")
                 traj_lenth += 1
                 steps += 1
-                start_time = time()
                 s_prime, a, pi_a, r, done, s_val, self.env, info = self.algo.step(
                     self.env, s, self.render)
-                end_time = time()
                 self.algo.buffer.put((s, a, r, s_prime, pi_a, s_val, done))
-
-                print("Step time: {}".format(end_time - start_time))
                 s = s_prime
                 ep_r += r
 

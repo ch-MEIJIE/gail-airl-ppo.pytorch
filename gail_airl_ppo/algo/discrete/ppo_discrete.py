@@ -24,6 +24,7 @@ class PPO(Algorithm):
             self,
             state_dim,
             action_dim,
+            context_length,
             gamma=0.99,
             rollout_length=2048,
             lambd=0.95,
@@ -47,12 +48,12 @@ class PPO(Algorithm):
 
         self.device = device
         self.actor = Actor(state_dim, action_dim,
-                           net_width).float().to(self.device)
+                           net_width, context_length).float().to(self.device)
         self.actor_old = Actor(state_dim, action_dim,
-                               net_width).float().to(self.device)
+                               net_width, context_length).float().to(self.device)
 
-        self.critic = Critic(state_dim, net_width).float().to(self.device)
-        self.critic_old = Critic(state_dim, net_width).float().to(self.device)
+        self.critic = Critic(state_dim, net_width, context_length).float().to(self.device)
+        self.critic_old = Critic(state_dim, net_width, context_length).float().to(self.device)
 
         self.optimizer = torch.optim.Adam([
             {'params': self.actor.parameters(), 'lr': lr_actor},
@@ -97,7 +98,7 @@ class PPO(Algorithm):
         return action, 1.0
 
     def is_update(self, step):
-        return step % (self.rollout_length * 4) == 0
+        return step % (self.rollout_length) == 0
 
     def is_eval(self, step):
         return step % self.eval_interval == 0
@@ -111,8 +112,7 @@ class PPO(Algorithm):
         a, pi_a = self.explore(s)
         s_val = self.critic_old.react(s)
         a = a.clone().cpu().numpy()
-        s_prime, r, termination, truncation, info = env.step(a)
-        done = termination or truncation
+        s_prime, r, done, info = env.step(a)
 
         return s_prime, a, pi_a, r, done, s_val, env, info
 
@@ -190,7 +190,7 @@ class PPO(Algorithm):
         scores = 0
         for _ in range(self.neval):
             # s, done, ep_r, steps = env.reset(), False, 0, 0
-            s, info = env.reset()
+            s = env.reset()
             done = False
             steps = 0
             ep_r = 0
@@ -199,8 +199,7 @@ class PPO(Algorithm):
                 a, _ = self.exploit(torch.from_numpy(
                     s).float().to(self.device))
                 a = a.clone().cpu().numpy()
-                s_prime, r, termination, truncation, info = env.step(a)
-                done = termination or truncation
+                s_prime, r, done, info = env.step(a)
                 ep_r += r
                 steps += 1
                 s = s_prime
