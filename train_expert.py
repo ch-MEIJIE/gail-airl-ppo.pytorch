@@ -25,7 +25,19 @@ def run(args):
         state_shape=state_dims,
         action_shape=action_dim,
         device=torch.device("cuda" if args.cuda else "cpu"),
-        seed=args.seed
+        seed=args.seed,
+        gamma=0.99,
+        rollout_length=1000,
+        mix_buffer=2,
+        units_actor=64,
+        units_critic=64,
+        lr_actor=3e-4,
+        lr_critic=1e-3,
+        epoch_ppo=80,
+        clip_eps=0.2,
+        lambd=0.95,
+        coef_ent=1e-3,
+        max_grad_norm=10.0
     )
 
     time = datetime.now().strftime("%Y%m%d-%H%M")
