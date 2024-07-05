@@ -8,7 +8,7 @@ import numpy as np
 
 class Trainer:
 
-    def __init__(self, env, env_test, algo, log_dir, seed=0, num_steps=10**5,
+    def __init__(self, env, env_test, algo, log_dir, seed=0, num_steps=2*10**5,
                  eval_interval=10**3, num_env=5, num_eval_episodes=5):
         super().__init__()
 

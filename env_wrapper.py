@@ -27,10 +27,7 @@ class PyFlytEnvWrapper:
     def reset(self):
         obs, _ = self.env.reset()
         self.state_atti = obs['attitude']
-        self.state_targ = np.zeros(
-            (self.targets_num, self.obs_target_size))
-        self.state_targ[: len(obs['target_deltas'])] = obs['target_deltas']
-        self.state_targ = self.state_targ[0]
+        self.state_targ = obs['target_deltas'][0]
         self.state_bound = obs['target_delta_bound']
 
         obs = self.concat_state()
@@ -42,9 +39,7 @@ class PyFlytEnvWrapper:
 
         self.state_atti = obs['attitude']
         # For getting a unifed observation space, we pad the target deltas
-        self.state_targ = np.zeros(
-            (self.targets_num, self.obs_target_size))
-        self.state_targ[: len(obs['target_deltas'])] = obs['target_deltas']
+        self.state_targ = obs['target_deltas'][0]
         self.state_bound = obs['target_delta_bound']
 
         obs = self.concat_state()

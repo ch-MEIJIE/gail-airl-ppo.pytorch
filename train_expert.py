@@ -51,7 +51,7 @@ def run(args):
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
-    p.add_argument('--num_steps', type=int, default=10**6)
+    p.add_argument('--num_steps', type=int, default=3*10**5)
     p.add_argument('--eval_interval', type=int, default=10**4)
     p.add_argument('--env_id', type=str, default='QuadX-UVRZ-Gates-v2')
     p.add_argument('--cuda', action='store_true')

@@ -9,7 +9,9 @@ from gail_airl_ppo.network import StateIndependentPolicyDiscrete, StateFunction
 
 
 def calculate_gae(values, rewards, dones, next_values, gamma, lambd):
-    gaes = torch.empty_like(rewards)
+    values = values.squeeze(-1)
+    next_values = next_values.squeeze(-1)
+    gaes = torch.empty_like(rewards, dtype=torch.float32)
     for env_idx in range(rewards.size(1)):
         deltas = rewards[:, env_idx]\
             + gamma * next_values[:, env_idx]\
@@ -26,7 +28,7 @@ def calculate_gae(values, rewards, dones, next_values, gamma, lambd):
 class PPO(Algorithm):
 
     def __init__(self, state_shape, action_shape, device, seed, num_env,
-                 context_length=1, gamma=0.995, rollout_length=2048,
+                 context_length=1, gamma=0.995, rollout_length=100,
                  mix_buffer=20, lr_actor=3e-4,
                  lr_critic=3e-4, units_actor=(64, 64), units_critic=(64, 64),
                  epoch_ppo=10, clip_eps=0.2, lambd=0.97, coef_ent=0.0,
