@@ -23,7 +23,6 @@ class PyFlytEnvWrapper:
         # TODO: Flatten the target delta bound space in ENV
         self.obs_bound_size = \
             self.env.observation_space["target_delta_bound"].shape[0]
-        self._max_episode_steps = self.env.unwrapped.max_steps
 
     def reset(self):
         obs, _ = self.env.reset()
@@ -31,6 +30,7 @@ class PyFlytEnvWrapper:
         self.state_targ = np.zeros(
             (self.targets_num, self.obs_target_size))
         self.state_targ[: len(obs['target_deltas'])] = obs['target_deltas']
+        self.state_targ = self.state_targ[0]
         self.state_bound = obs['target_delta_bound']
 
         obs = self.concat_state()
@@ -54,5 +54,5 @@ class PyFlytEnvWrapper:
 
     def concat_state(self):
         return np.concatenate(
-            [self.state_atti, self.state_targ.flatten(), self.state_bound]
+            [self.state_atti, self.state_targ, self.state_bound]
         )

@@ -3,12 +3,13 @@ from time import time, sleep
 from datetime import timedelta
 from torch.utils.tensorboard import SummaryWriter
 import tqdm
+import numpy as np
 
 
 class Trainer:
 
     def __init__(self, env, env_test, algo, log_dir, seed=0, num_steps=10**5,
-                 eval_interval=10**3, num_eval_episodes=5):
+                 eval_interval=10**3, num_env=5, num_eval_episodes=5):
         super().__init__()
 
         # Env to collect samples.
@@ -21,6 +22,7 @@ class Trainer:
 
         self.algo = algo
         self.log_dir = log_dir
+        self.num_env = num_env
 
         # Log setting.
         self.summary_dir = os.path.join(log_dir, 'summary')
@@ -38,7 +40,7 @@ class Trainer:
         # Time to start training.
         self.start_time = time()
         # Episode's timestep.
-        t = 0
+        t = np.zeros(self.num_env, dtype=np.int64)
         # Initialize the environment.
         state = self.env.reset()
         pbar = tqdm.trange(1, self.num_steps + 1, unit_scale=1, desc='Training')

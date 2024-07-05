@@ -4,57 +4,60 @@ from torch import nn
 from torch.optim import Adam
 
 from .base import Algorithm
-from gail_airl_ppo.buffer import RolloutBuffer
-from gail_airl_ppo.network.actor_critic_pyflyt import Actor, Critic
+from gail_airl_ppo.buffer import VecRolloutBuffer
+from gail_airl_ppo.network import StateIndependentPolicyDiscrete, StateFunction
 
 
 def calculate_gae(values, rewards, dones, next_values, gamma, lambd):
-    # Calculate TD errors.
-    deltas = rewards + gamma * next_values * (1 - dones) - values
-    # Initialize gae.
     gaes = torch.empty_like(rewards)
-
-    # Calculate gae recursively from behind.
-    gaes[-1] = deltas[-1]
-    for t in reversed(range(rewards.size(0) - 1)):
-        gaes[t] = deltas[t] + gamma * lambd * (1 - dones[t]) * gaes[t + 1]
-
-    return gaes + values, (gaes - gaes.mean()) / (gaes.std() + 1e-8)
+    for env_idx in range(rewards.size(1)):
+        deltas = rewards[:, env_idx]\
+            + gamma * next_values[:, env_idx]\
+            * (1 - dones[:, env_idx]) - values[:, env_idx]
+        gaes[-1, env_idx] = deltas[-1]
+        for t in reversed(range(rewards.size(0) - 1)):
+            gaes[t, env_idx] = deltas[t] + gamma * lambd * \
+                (1 - dones[t, env_idx]) * gaes[t + 1, env_idx]
+    gaes = (gaes - gaes.mean(dim=0, keepdim=True)) / \
+        (gaes.std(dim=0, keepdim=True) + 1e-8)
+    return gaes+values, gaes
 
 
 class PPO(Algorithm):
 
-    def __init__(self, state_shape, action_shape, device, seed,
+    def __init__(self, state_shape, action_shape, device, seed, num_env,
                  context_length=1, gamma=0.995, rollout_length=2048,
                  mix_buffer=20, lr_actor=3e-4,
-                 lr_critic=3e-4, units_actor=128, units_critic=128,
+                 lr_critic=3e-4, units_actor=(64, 64), units_critic=(64, 64),
                  epoch_ppo=10, clip_eps=0.2, lambd=0.97, coef_ent=0.0,
                  max_grad_norm=10.0):
         super().__init__(state_shape, action_shape, device, seed, gamma)
 
         # Rollout buffer.
-        flatten_state_shape = state_shape[0] + state_shape[1][0]*state_shape[1][1] + state_shape[2]
-        self.buffer = RolloutBuffer(
+        # flatten_state_shape = state_shape[0] + \
+        #     state_shape[1][0]*state_shape[1][1] + state_shape[2]
+        self.buffer = VecRolloutBuffer(
             buffer_size=rollout_length,
-            state_shape=[flatten_state_shape],
+            state_shape=state_shape,
             action_shape=[1],
             device=device,
+            num_env=num_env,
             mix=mix_buffer
         )
 
         # Actor.
-        self.actor = Actor(
-            state_dim=state_shape,
-            action_dim=action_shape,
-            hidden_unit_size=units_actor,
-            context_length=context_length,
+        self.actor = StateIndependentPolicyDiscrete(
+            state_shape=state_shape,
+            action_shape=action_shape,
+            hidden_units=units_actor,
+            hidden_activation=nn.Tanh()
         ).to(device)
 
         # Critic.
-        self.critic = Critic(
-            state_dim=state_shape,
-            hidden_unit_size=units_critic,
-            context_length=context_length,
+        self.critic = StateFunction(
+            state_shape=state_shape,
+            hidden_units=units_critic,
+            hidden_activation=nn.Tanh()
         ).to(device)
 
         self.optim_actor = Adam(self.actor.parameters(), lr=lr_actor)
@@ -91,15 +94,18 @@ class PPO(Algorithm):
         t += 1
 
         action, log_pi = self.explore(state)
-        
-        next_state, reward, done, _ = env.step(action)
-        mask = False if t == env._max_episode_steps else done
+
+        next_state, reward, dones, _ = env.step(action)
+        mask = [(False if t[i] == env._max_episode_steps else done) for i, done in enumerate(dones)]
 
         self.buffer.append(state, action, reward, mask, log_pi, next_state)
 
-        if done:
-            t = 0
-            next_state = env.reset()
+        for i, done in enumerate(dones):
+            if done:
+                t[i] = 0
+            # it seems we do not need to reset the env
+            # because the env is automatically reset when done
+            # next_state = env.reset()
 
         return next_state, t
 
@@ -120,9 +126,20 @@ class PPO(Algorithm):
             values, rewards, dones, next_values, self.gamma, self.lambd)
 
         for _ in range(self.epoch_ppo):
-            self.learning_steps_ppo += 1
-            self.update_critic(states, targets, writer)
-            self.update_actor(states, actions, log_pis, gaes, writer)
+            for env_idx in range(rewards.size(1)):
+                self.learning_steps_ppo += 1
+                self.update_critic(
+                    states[:, env_idx],
+                    targets[:, env_idx],
+                    writer
+                )
+                self.update_actor(
+                    states[:, env_idx],
+                    actions[:, env_idx],
+                    log_pis[:, env_idx],
+                    gaes[:, env_idx],
+                    writer
+                )
 
     def update_critic(self, states, targets, writer):
         loss_critic = (self.critic(states) - targets).pow_(2).mean()

@@ -5,39 +5,31 @@ import torch
 
 from gail_airl_ppo.algo.ppo_discrete import PPO
 from gail_airl_ppo.trainer import Trainer
+from vec_env_wrapper import VecPyFlytEnvWrapper
 from env_wrapper import PyFlytEnvWrapper
 
 
 def run(args):
-    env = PyFlytEnvWrapper(
+    num_env = 5
+    env = VecPyFlytEnvWrapper(
         render_mode=None,
-        env_id="PyFlyt/QuadX-UVRZ-Gates-v2"
+        env_id="PyFlyt/QuadX-UVRZ-Gates-v2",
+        num_env=num_env
     )
     env_test = PyFlytEnvWrapper(
         render_mode=None,
         env_id="PyFlyt/QuadX-UVRZ-Gates-v2"
     )
     
-    action_dim = env.act_size
-    state_dims = [env.obs_atti_size, (env.targets_num, env.obs_target_size), env.obs_bound_size]
+    action_dim = (env_test.act_size,)
+    state_dims = (env.obs_atti_size+env.obs_target_size+env.obs_bound_size,)
 
     algo = PPO(
         state_shape=state_dims,
         action_shape=action_dim,
         device=torch.device("cuda" if args.cuda else "cpu"),
         seed=args.seed,
-        gamma=0.99,
-        rollout_length=1000,
-        mix_buffer=2,
-        units_actor=64,
-        units_critic=64,
-        lr_actor=3e-4,
-        lr_critic=1e-3,
-        epoch_ppo=80,
-        clip_eps=0.2,
-        lambd=0.95,
-        coef_ent=1e-3,
-        max_grad_norm=10.0
+        num_env=num_env
     )
 
     time = datetime.now().strftime("%Y%m%d-%H%M")
@@ -51,6 +43,7 @@ def run(args):
         log_dir=log_dir,
         num_steps=args.num_steps,
         eval_interval=args.eval_interval,
+        num_env=num_env,
         seed=args.seed
     )
     trainer.train()
