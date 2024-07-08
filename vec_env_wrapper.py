@@ -8,12 +8,14 @@ class VecPyFlytEnvWrapper:
         self,
         render_mode: str = "human",
         env_id: str = "PyFlyt/QuadX-UVRZ-Gates-v2",
-        num_env: int = 5
+        num_env: int = 5,
+        seed: int = 0
     ) -> None:
         self.env = gym.make_vec(
             env_id,
             render_mode=render_mode,
             agent_hz=2,
+            seed=seed,
             num_envs=num_env,
             vectorization_mode="async",
             vector_kwargs=({'shared_memory': False})

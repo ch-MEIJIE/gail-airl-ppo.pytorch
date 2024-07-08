@@ -57,7 +57,8 @@ class Trainer:
             if step % self.eval_interval == 0:
                 self.evaluate(step)
                 self.algo.save_models(
-                    os.path.join(self.model_dir, f'step{step}'))
+                    os.path.join(self.model_dir, f'step{step}')
+                    )
 
         # Wait for the logging to be finished.
         sleep(10)

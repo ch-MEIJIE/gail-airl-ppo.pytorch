@@ -28,7 +28,7 @@ def calculate_gae(values, rewards, dones, next_values, gamma, lambd):
 class PPO(Algorithm):
 
     def __init__(self, state_shape, action_shape, device, seed, num_env,
-                 context_length=1, gamma=0.995, rollout_length=100,
+                 context_length=1, gamma=0.995, rollout_length=2048,
                  mix_buffer=20, lr_actor=3e-4,
                  lr_critic=3e-4, units_actor=(64, 64), units_critic=(64, 64),
                  epoch_ppo=10, clip_eps=0.2, lambd=0.97, coef_ent=0.0,
@@ -98,7 +98,9 @@ class PPO(Algorithm):
         action, log_pi = self.explore(state)
 
         next_state, reward, dones, _ = env.step(action)
-        mask = [(False if t[i] == env._max_episode_steps else done) for i, done in enumerate(dones)]
+        mask = [
+            (False if t[i] == env._max_episode_steps else done) for i, done in enumerate(dones)
+            ]
 
         self.buffer.append(state, action, reward, mask, log_pi, next_state)
 

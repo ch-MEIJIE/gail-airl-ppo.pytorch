@@ -7,11 +7,13 @@ class PyFlytEnvWrapper:
     def __init__(
         self,
         render_mode: str = "human",
-        env_id: str = "PyFlyt/QuadX-UVRZ-Gates-v2"
+        env_id: str = "PyFlyt/QuadX-UVRZ-Gates-v2",
+        seed: int = 0
     ) -> None:
         self.env = gym.make(
             env_id,
             render_mode=render_mode,
+            seed=seed,
             agent_hz=2
         )
         self.targets_num = self.env.unwrapped.targets_num
