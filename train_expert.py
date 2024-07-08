@@ -14,13 +14,15 @@ def run(args):
     env = VecPyFlytEnvWrapper(
         render_mode=None,
         env_id="PyFlyt/QuadX-UVRZ-Gates-v2",
-        num_env=num_env
+        num_env=num_env,
+        seed=args.seed
     )
     env_test = PyFlytEnvWrapper(
         render_mode=None,
-        env_id="PyFlyt/QuadX-UVRZ-Gates-v2"
+        env_id="PyFlyt/QuadX-UVRZ-Gates-v2",
+        seed=args.seed
     )
-    
+
     action_dim = (env_test.act_size,)
     state_dims = (env.obs_atti_size+env.obs_target_size+env.obs_bound_size,)
 
