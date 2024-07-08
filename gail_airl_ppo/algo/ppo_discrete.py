@@ -186,3 +186,8 @@ class PPO(Algorithm):
             self.actor.state_dict(),
             os.path.join(save_dir, 'actor.pth')
         )
+        torch.save(
+            self.critic.state_dict(),
+            os.path.join(save_dir, 'critic.pth')
+        )
+

@@ -10,7 +10,7 @@ from env_wrapper import PyFlytEnvWrapper
 
 
 def run(args):
-    num_env = 5
+    num_env = 10
     env = VecPyFlytEnvWrapper(
         render_mode=None,
         env_id="PyFlyt/QuadX-UVRZ-Gates-v2",
@@ -52,7 +52,7 @@ def run(args):
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('--num_steps', type=int, default=3*10**5)
-    p.add_argument('--eval_interval', type=int, default=10**4)
+    p.add_argument('--eval_interval', type=int, default=3000)
     p.add_argument('--env_id', type=str, default='QuadX-UVRZ-Gates-v2')
     p.add_argument('--cuda', action='store_true')
     p.add_argument('--seed', type=int, default=0)
