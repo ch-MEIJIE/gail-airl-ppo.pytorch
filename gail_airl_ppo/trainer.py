@@ -9,7 +9,7 @@ import numpy as np
 class Trainer:
 
     def __init__(self, env, env_test, algo, log_dir, seed=0, num_steps=2*10**5,
-                 eval_interval=10**3, num_env=5, num_eval_episodes=5):
+                 eval_interval=10**2, num_env=5, num_eval_episodes=5):
         super().__init__()
 
         # Env to collect samples.
@@ -40,7 +40,8 @@ class Trainer:
         # Time to start training.
         self.start_time = time()
         # Episode's timestep.
-        t = np.zeros(self.num_env, dtype=np.int64)
+        # t = np.zeros(self.num_env, dtype=np.int64)
+        t = 0
         # Initialize the environment.
         state = self.env.reset()
         pbar = tqdm.trange(1, self.num_steps + 1, unit_scale=1, desc='Training')
@@ -67,14 +68,7 @@ class Trainer:
         mean_return = 0.0
 
         for _ in range(self.num_eval_episodes):
-            state = self.env_test.reset()
-            episode_return = 0.0
-            done = False
-
-            while (not done):
-                action = self.algo.exploit(state)
-                state, reward, done, _ = self.env_test.step(action)
-                episode_return += reward
+            episode_return = self.algo.evaluate(self.env_test)
 
             mean_return += episode_return / self.num_eval_episodes
 
