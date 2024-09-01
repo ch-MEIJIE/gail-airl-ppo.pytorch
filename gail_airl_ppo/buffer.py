@@ -198,13 +198,13 @@ class SeqReplayBuffer:
         action_dim,
         sampled_seq_len: int,
         sample_weight_baseline: float,
-        device: str = "cpu",
+        device,
         **kwargs
     ):
         self._max_replay_buffer_size = max_replay_buffer_size
         self._observation_dim = observation_dim
         self._action_dim = action_dim
-        self.device = torch.device(device)
+        self.device = device
 
         self._observations = torch.zeros(
             (max_replay_buffer_size,
@@ -221,7 +221,7 @@ class SeqReplayBuffer:
             (max_replay_buffer_size, 1), dtype=torch.float, device=device
         )
         self._terminals = torch.zeros(
-            (max_replay_buffer_size, 1), dtype=torch.int64, device=device
+            (max_replay_buffer_size, 1), dtype=torch.float, device=device
         )
         self._valid_starts = torch.zeros(
             (max_replay_buffer_size), dtype=torch.float, device=device

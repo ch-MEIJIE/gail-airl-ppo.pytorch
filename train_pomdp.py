@@ -35,7 +35,8 @@ def run(args):
         rnn_hidden_size=128,
         dqn_layers=[128, 128],
         policy_layers=[128, 128],
-        device=torch.device("cuda" if args.cuda else "cpu"),
+        # device=torch.device("cuda" if args.cuda else "cpu"),
+        device=torch.device("cpu"),
         seed=args.seed,
         buffer_size=int(1e6),
         sampled_seq_len=64,
@@ -61,7 +62,7 @@ def run(args):
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('--num_steps', type=int, default=3*10**5)
-    p.add_argument('--eval_interval', type=int, default=1000)
+    p.add_argument('--eval_interval', type=int, default=10000)
     p.add_argument('--env_id', type=str, default='QuadX-UVRZ-Gates-v2')
     p.add_argument('--cuda', action='store_true')
     p.add_argument('--seed', type=int, default=0)

@@ -28,6 +28,8 @@ class FeatureExtractor(nn.Module):
 
     def forward(self, inputs):
         if self.output_size != 0:
+            device = next(self.parameters()).device
+            inputs = inputs.to(device)
             return self.activation_function(self.fc(inputs))
         else:
             return ptu.zeros(

@@ -32,7 +32,7 @@ class pomdp(Algorithm):
             lr=3e-4,
             tau=5e-3,
             image_encoder_fn=lambda: None,
-            start_rollout=1  # TODO: Remeber to change this to 5
+            start_rollout=5  # TODO: Remeber to change this to 5
     ):
         super().__init__(state_shape, action_shape, device, seed, gamma)
 
@@ -50,7 +50,8 @@ class pomdp(Algorithm):
             observation_dim=state_shape[0],
             action_dim=action_shape[0],
             sampled_seq_len=sampled_seq_len,
-            sample_weight_baseline=0.0
+            sample_weight_baseline=0.0,
+            device=device
         )
 
         # RNN Critic
@@ -194,8 +195,8 @@ class pomdp(Algorithm):
         next_state = torch.from_numpy(next_state).\
             view(-1, self.state_shape[0]).float().to(self.device)
         reward = torch.FloatTensor([reward]).view(-1, 1).to(self.device)
-        done = torch.from_numpy(np.array(done, dtype=int)
-                                ).view(-1, 1).to(self.device)
+        done = torch.from_numpy(np.array(done, dtype=np.int64)
+                                ).view(-1, 1).float().to(self.device)
 
         # Check if the episode is done
         done_rollout = False if done[0][0].to(
@@ -226,7 +227,7 @@ class pomdp(Algorithm):
                 actions=torch.cat(self.action_list, dim=0),
                 rewards=torch.cat(self.reward_list, dim=0),
                 terminals=torch.from_numpy(
-                    np.array(self.done_list, dtype=int).reshape(-1, 1)).to(self.device),
+                    np.array(self.done_list, dtype=int).reshape(-1, 1)).to(self.device).float(),
                 next_observations=torch.cat(self.next_state_list, dim=0)
             )
             self.initial_episode_storage()
@@ -244,7 +245,7 @@ class pomdp(Algorithm):
         return self.do_update
 
     def update(self, writer):
-        print("Update")
+        # print("Update")
         # Sample a batch
         for _ in range(self.update_times):
             batch = self.buffer.random_episodes(self.batch_size)
