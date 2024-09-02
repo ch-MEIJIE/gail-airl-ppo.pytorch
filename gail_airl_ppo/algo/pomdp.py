@@ -92,9 +92,6 @@ class pomdp(Algorithm):
         self.start_rollout = start_rollout
         self.current_rollout = 0
 
-        # Initialize the hidden state
-        self.prev_action, self.reward, self.internal_state = self.actor.get_initial_info()
-
         # Initial a temporary storage for the current episode
         self.initial_episode_storage()
 
@@ -166,7 +163,7 @@ class pomdp(Algorithm):
         # t is a numpy array of shape (E,)
         # E is the number of the parallel environments
         t += 1
-        
+
         # Check if the state is a numpy array, if it is convert it to torch
         if not torch.is_tensor(state):
             state = torch.from_numpy(state).\
@@ -219,6 +216,8 @@ class pomdp(Algorithm):
             self.current_rollout += 1
             if self.current_rollout > self.start_rollout:
                 self.do_update = True
+                # update the internal state
+                self.prev_action, self.reward, self.internal_state = self.actor.get_initial_info()
             # Record the t
             self.update_times = t
             # Store the episode
@@ -364,20 +363,23 @@ class pomdp(Algorithm):
         for target_param, param in zip(target.parameters(), source.parameters()):
             target_param.data.copy_(
                 target_param.data * (1.0 - tau) + param.data * tau)
-    
+
     def evaluate(self, env_test):
         obs = env_test.reset()
         done = False
         # convert the obs to torch
-        obs = torch.from_numpy(obs).view(-1, self.state_shape[0]).float().to(self.device)
+        obs = torch.from_numpy(
+            obs).view(-1, self.state_shape[0]).float().to(self.device)
         # get hideen state from the actor
         action, reward, internal_state = self.actor.get_initial_info()
         epsidoic_return = 0.0
         while not done:
-            action, internal_state = self.exploit(internal_state, action, reward, obs)
+            action, internal_state = self.exploit(
+                internal_state, action, reward, obs)
             action = np.argmax(action)
             obs, reward, done, _ = env_test.step(action)
-            obs = torch.from_numpy(obs).view(-1, self.state_shape[0]).float().to(self.device)
+            obs = torch.from_numpy(
+                obs).view(-1, self.state_shape[0]).float().to(self.device)
             epsidoic_return += reward
             reward = torch.FloatTensor([reward]).view(-1, 1).to(self.device)
             action = torch.FloatTensor([action]).to(self.device)
